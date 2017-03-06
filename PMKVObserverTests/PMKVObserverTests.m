@@ -5,6 +5,12 @@
 //  Created by Kevin Ballard on 11/19/15.
 //  Copyright © 2015 Postmates. All rights reserved.
 //
+//  Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+//  http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+//  <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+//  option. This file may not be copied, modified, or distributed
+//  except according to those terms.
+//
 
 @import XCTest;
 #import "PMKVObserver.h"
@@ -237,6 +243,49 @@
         fired = NO;
     }
     XCTAssertNil(weakToken);
+}
+
+- (void)testCancelTwice {
+    __block BOOL fired = NO;
+    PMKVObserver *token = [PMKVObserver observeObject:self.helper keyPath:@"str" options:0 block:^(id  _Nonnull object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
+        fired = YES;
+    }];
+    self.helper.str = @"foo";
+    XCTAssertTrue(fired);
+    fired = NO;
+    [token cancel];
+    [token cancel];
+    self.helper.str = @"bar";
+    XCTAssertFalse(fired);
+}
+
+- (void)testCancelConcurrently {
+    __block BOOL fired = NO;
+    PMKVObserver *token = [PMKVObserver observeObject:self.helper keyPath:@"str" options:0 block:^(id  _Nonnull object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
+        fired = YES;
+    }];
+    self.helper.str = @"foo";
+    XCTAssertTrue(fired);
+    fired = NO;
+    dispatch_group_t group = dispatch_group_create();
+    for (int i = 0; i < 2; ++i) {
+        dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+            [token cancel];
+        });
+    }
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    self.helper.str = @"bar";
+    XCTAssertFalse(fired);
+}
+
+- (void)testIsCancelled {
+    PMKVObserver *token = [PMKVObserver observeObject:self.helper keyPath:@"str" options:0 block:^(id  _Nonnull object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
+    }];
+    XCTAssertFalse(token.cancelled);
+    self.helper.str = @"foo";
+    XCTAssertFalse(token.cancelled);
+    [token cancel];
+    XCTAssertTrue(token.cancelled);
 }
 
 @end

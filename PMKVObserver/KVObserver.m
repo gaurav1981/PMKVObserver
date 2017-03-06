@@ -5,6 +5,12 @@
 //  Created by Kevin Ballard on 11/18/15.
 //  Copyright © 2015 Postmates. All rights reserved.
 //
+//  Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+//  http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+//  <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+//  option. This file may not be copied, modified, or distributed
+//  except according to those terms.
+//
 
 #import "KVObserver.h"
 #import <stdatomic.h>
@@ -32,8 +38,8 @@ typedef NS_ENUM(uint_fast8_t, PMKVObserverState) {
     PMKVObserverStateDeregistered = 1 << 2
 };
 
-typedef void (^Callback)(id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo);
-typedef void (^ObserverCallback)(id observer, id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo);
+typedef void (^Callback)(id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo);
+typedef void (^ObserverCallback)(id observer, id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo);
 
 @implementation PMKVObserver {
     __weak id _Nullable _object;
@@ -117,6 +123,10 @@ static void setup(PMKVObserver *self, id _Nullable NS_VALID_UNTIL_END_OF_SCOPE o
     }
 }
 
+- (BOOL)isCancelled {
+    return (atomic_load_explicit(&_state, memory_order_relaxed) & PMKVObserverStateActive) == 0;
+}
+
 - (void)cancel {
     [self cancel:NO];
 }
@@ -162,7 +172,7 @@ static void setup(PMKVObserver *self, id _Nullable NS_VALID_UNTIL_END_OF_SCOPE o
     [self clearDeallocSpies];
 }
 
-- (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSString *,id> *)change context:(nullable void *)context {
+- (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSKeyValueChangeKey,id> *)change context:(nullable void *)context {
     if (context != kContext) {
         return [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }

@@ -5,6 +5,12 @@
 //  Created by Kevin Ballard on 11/18/15.
 //  Copyright © 2015 Postmates. All rights reserved.
 //
+//  Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+//  http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+//  <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+//  option. This file may not be copied, modified, or distributed
+//  except according to those terms.
+//
 
 import XCTest
 @testable import PMKVObserver
@@ -28,7 +34,7 @@ class KVObserverTests: XCTestCase {
         token = KVObserver(object: helper, keyPath: "str") { [weak helper] object, change, kvo in
             fired = true
             XCTAssert(object === helper)
-            XCTAssertEqual(change.kind, .Setting)
+            XCTAssertEqual(change.kind, .setting)
             XCTAssert(kvo === token)
             XCTAssertEqual(object.str, "foo")
         }
@@ -61,7 +67,7 @@ class KVObserverTests: XCTestCase {
         weak var weakToken: KVObserver!
         helper.str = "foo"
         autoreleasepool {
-            let token = KVObserver(object: helper, keyPath: "str", options: .Initial) { object, _, kvo in
+            let token = KVObserver(object: helper, keyPath: "str", options: .initial) { object, _, kvo in
                 fired = true
                 XCTAssertEqual(object.str, "foo")
                 kvo.cancel()
@@ -76,7 +82,7 @@ class KVObserverTests: XCTestCase {
         XCTAssertNil(weakToken)
         
         autoreleasepool {
-            let token = KVObserver(observer: self, object: helper, keyPath: "str", options: .Initial) { _, object, _, kvo in
+            let token = KVObserver(observer: self, object: helper, keyPath: "str", options: .initial) { _, object, _, kvo in
                 fired = true
                 XCTAssertEqual(object.str, "bar")
                 kvo.cancel()

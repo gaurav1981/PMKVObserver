@@ -1,16 +1,17 @@
 # PMKVObserver
 
-[![Version](https://img.shields.io/badge/version-v1.0.1-blue.svg)](https://github.com/postmates/PMKVObserver/releases/latest)
+[![Version](https://img.shields.io/badge/version-v2.0.1-blue.svg)](https://github.com/postmates/PMKVObserver/releases/latest)
 ![Platforms](https://img.shields.io/badge/platforms-ios%20%7C%20osx%20%7C%20watchos%20%7C%20tvos-lightgrey.svg)
 ![Languages](https://img.shields.io/badge/languages-swift%20%7C%20objc-orange.svg)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/postmates/PMKVObserver/blob/master/LICENSE)
+![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)][Carthage]
+[![CocoaPods](https://img.shields.io/cocoapods/v/PMKVObserver.svg)](http://cocoadocs.org/docsets/PMKVObserver)
 
 [Carthage]: https://github.com/carthage/carthage
 
 PMKVObserver provides a safe block-based wrapper around Key-Value Observing, with APIs for both Obj-C and Swift. Features include:
 
-* Thread-safety. Observers can be registered on a different thread than KVO notifications are sent on, and can be cancelled on yet another thread. An observer can even be cancelled from two thread simultaneously.
+* Thread-safety. Observers can be registered on a different thread than KVO notifications are sent on, and can be cancelled on yet another thread. An observer can even be cancelled from two threads simultaneously.
 * Automatic unregistering when the observed object deallocates.
 * Support for providing an observing object that is given to the block, and automatic unregistering when this observing object deallocates. This lets you call methods on `self` without retaining it or dealing with a weak reference.
 * Thread-safety for the automatic deallocation. This protects against receiving messages on another thread while the object is deallocating.
@@ -28,8 +29,8 @@ _ = KVObserver(object: user, keyPath: "fullName") { object, _, _ in
 }
 
 // Convenience methods for working with the change dictionary
-_ = KVObserver(object: user, keyPath: "fullName", options: [.Old, .New]) { _, change, _ in
-    // unfortunately we don't know what the type of fullName is, so change uses AnyObject
+_ = KVObserver(object: user, keyPath: "fullName", options: [.old, .new]) { _, change, _ in
+    // unfortunately we don't know what the type of fullName is, so change uses Any
     let old = change.old as? String
     let new = change.new as? String
     if old != new {
@@ -37,8 +38,8 @@ _ = KVObserver(object: user, keyPath: "fullName", options: [.Old, .New]) { _, ch
     }
 }
 
-// Unregistering can be done from within the block, even in an .Initial callback
-_ = KVObserver(object: user, keyPath: "fullName", options: [.Initial]) { object, _, kvo in
+// Unregistering can be done from within the block, even in an .initial callback
+_ = KVObserver(object: user, keyPath: "fullName", options: [.initial]) { object, _, kvo in
     guard !object.fullName.isEmpty else { return }
     print("User's full name is \(object.fullName)")
     kvo.cancel()
@@ -65,14 +66,14 @@ Objective-C provides all the same functionality as Swift, albeit without the str
 ```objc
 // Observe an object for as long as the object is alive.
 [PMKVObserver observeObject:self.user keyPath:@"fullName" options:0
-                      block:^(id  _Nonnull object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
+                      block:^(id  _Nonnull object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
     NSLog(@"User's full name changed to %@", [object fullName]);
 }];
 
 // Change dictionary is provided, but without the convenience methods.
 [PMKVObserver observeObject:self.user keyPath:@"fullName"
                     options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew
-                      block:^(id  _Nonnull object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
+                      block:^(id  _Nonnull object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver * _Nonnull kvo) {
     NSString *old = change[NSKeyValueChangeOldKey];
     NSString *new = change[NSKeyValueChangeNewKey];
     if (old != new && (new == nil || ![old isEqualToString:new])) {
@@ -83,10 +84,6 @@ Objective-C provides all the same functionality as Swift, albeit without the str
 // Unregistering and observing object support is also provided (see Swift examples).
 ```
 
-## Caveats
-
-As this is a brand-new framework, it has not yet been battle-tested. The test suite covers the basic functionality, but it can't test for multi-threading race conditions. To be the best of my knowledge it is implemented correctly, but if you find any problems, please [file an issue](https://github.com/postmates/PMKVObserver/issues).
-
 ## Requirements
 
 Installing as a framework requires a minimum of iOS 8, OS X 10.9, watchOS 2.0, or tvOS 9.0.
@@ -95,46 +92,84 @@ If you install by copying the source into your project, it should work on iOS 7 
 
 ## Installation
 
+After installing with any mechanism, you can use this by adding `import PMKVObserver` (Swift) or `@import PMKVObserver;` (Objective-C) to your code.
+
+### Carthage
+
 To install using [Carthage][], add the following to your Cartfile:
 
 ```
-github "postmates/PMKVObserver"
+github "postmates/PMKVObserver" ~> 2.0
 ```
+
+This version supports Swift 3.0. For Swift 2.3, use the following instead:
+
+```
+github "postmates/PMKVObserver" "v1.0.5"
+```
+
+### CocoaPods
+
+To install using [CocoaPods][], add the following to your Podfile:
+
+```
+pod 'PMKVObserver', '~> 2.0'
+```
+
+This release supports Swift 3. If you want Swift 2.3 support, you can use
+
+```
+pod 'PMKVObserver', '~> 1.0.5'
+```
+
+[CocoaPods]: https://cocoapods.org
+
+### Manual Installation
 
 You may also install manually by adding the framework to your workspace, or by adding the 3 files KVObserver.h, KVObserver.m, and (optionally) KVObserver.swift to your project.
 
-Once installed, you can use this by adding `import PMKVObserver` (Swift) or `@import PMKVObserver;` (Objective-C) to your code.
+## License
+
+Licensed under either of
+ * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+   http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   http://opensource.org/licenses/MIT) at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you shall be dual licensed as above, without any additional terms or conditions.
 
 ## Version History
 
-#### v1.0.1 (12/17/2015)
+#### v2.0.1 (2016-09-15)
+
+* Fix CocoaPods.
+
+#### v2.0.0 (2016-09-08)
+
+* Update for Swift 3.0.
+
+#### v1.0.5 (2016-09-08)
+
+* Update for Swift 2.3.
+
+#### v1.0.4 (2016-03-02)
+
+* Update CocoaPods podspec to split Swift support into a subspec.
+
+#### v1.0.3 (2015-01-28)
+
+* Add property `cancelled` to `PMKVObserver`.
+
+#### v1.0.2 (2016-01-26)
+
+* Switch to dual-licensed as MIT or Apache 2.0.
+
+#### v1.0.1 (2015-12-17)
 
 * Stop leaking our `pthread_mutex_t`s.
 
-#### v1.0 (12/17/2015)
+#### v1.0 (2015-12-17)
 
 Initial release.
-
-## License
-
-The MIT License (MIT)
-
-Copyright (c) 2015 Postmates Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.

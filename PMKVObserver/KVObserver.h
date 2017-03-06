@@ -5,6 +5,12 @@
 //  Created by Kevin Ballard on 11/18/15.
 //  Copyright © 2015 Postmates. All rights reserved.
 //
+//  Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+//  http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+//  <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+//  option. This file may not be copied, modified, or distributed
+//  except according to those terms.
+//
 
 @import Foundation;
 
@@ -44,24 +50,33 @@ __attribute__((objc_subclassing_restricted))
 @interface PMKVObserver : NSObject
 /// Establishes a KVO relationship to <tt>object</tt>. The KVO will be active until \c object deallocates or
 /// until the \c cancel() method is invoked.
-+ (instancetype)observeObject:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo))block NS_SWIFT_UNAVAILABLE("use init(object:keyPath:options:block:)");
++ (instancetype)observeObject:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo))block NS_SWIFT_UNAVAILABLE("use init(object:keyPath:options:block:)");
 
 /// Establishes a KVO relationship to <tt>object</tt>. The KVO will be active until either \c object or
 /// \c observer deallocates or until the \c cancel() method is invoked.
-+ (instancetype)observeObject:(id)object observer:(id)observer keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id observer, id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo))block NS_SWIFT_UNAVAILABLE("use init(observer:object:keyPath:options:block:)");
++ (instancetype)observeObject:(id)object observer:(id)observer keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id observer, id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo))block NS_SWIFT_UNAVAILABLE("use init(observer:object:keyPath:options:block:)");
 
 /// Establishes a KVO relationship to <tt>object</tt>. The KVO will be active until \c object deallocates or
 /// until the \c cancel() method is invoked.
-- (instancetype)initWithObject:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo))block NS_DESIGNATED_INITIALIZER NS_REFINED_FOR_SWIFT;
+- (instancetype)initWithObject:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo))block NS_DESIGNATED_INITIALIZER NS_REFINED_FOR_SWIFT;
 
 /// Establishes a KVO relationship to <tt>object</tt>. The KVO will be active until either \c object or
 /// \c observer deallocates or until the \c cancel() method is invoked.
-- (instancetype)initWithObserver:(id)observer object:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id observer, id object, NSDictionary<NSString *,id> * _Nullable change, PMKVObserver *kvo))block NS_DESIGNATED_INITIALIZER NS_REFINED_FOR_SWIFT;
+- (instancetype)initWithObserver:(id)observer object:(id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(void (^)(id observer, id object, NSDictionary<NSKeyValueChangeKey,id> * _Nullable change, PMKVObserver *kvo))block NS_DESIGNATED_INITIALIZER NS_REFINED_FOR_SWIFT;
 
 - (instancetype)init NS_UNAVAILABLE;
 
 /// Unregisters the KVO. This can be called multiple times and can be called from any thread.
 - (void)cancel;
+
+/// Returns \c YES iff the observer has already been cancelled.
+///
+/// Returns \c YES if \c -cancel has been invoked on any thread. If \c -cancel is invoked
+/// concurrently with accessing this property, it may or may not see the cancellation depending
+/// on the precise timing involved.
+///
+/// \note This property does not support key-value observing.
+@property (atomic, readonly, getter=isCancelled) BOOL cancelled __attribute__((swift_private));
 @end
 
 NS_ASSUME_NONNULL_END
